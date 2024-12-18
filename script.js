@@ -34,17 +34,19 @@ function render() {
   playerBall.style.left = `${playerPosition.x}px`;
   playerBall.style.top = `${playerPosition.y}px`;
 
-  // 检查玩家是否到达指定地点
-  locations.forEach(location => {
-    const el = document.querySelector(`.mapObject.${location.type}`);
-    if (el && Math.abs(playerPosition.x - location.x) < 20 && Math.abs(playerPosition.y - location.y) < 20) {
+  // 获取所有.mapObject元素
+  const mapObjects = document.querySelectorAll('.mapObject');
+  mapObjects.forEach(el => {
+    const locationType = el.className.split(' ')[1]; // 获取额外的类（L、S、B）
+    const location = locations.find(loc => loc.type === locationType);
+    if (location && Math.abs(playerPosition.x - location.x) < 20 && Math.abs(playerPosition.y - location.y) < 20) {
       handleInteraction(location);
     }
   });
 
   // 检查是否被守护者追上
   guardians.forEach(guardian => {
-    const el = document.querySelector(`.guardian:nth-child(${guardian.index + 1})`);
+    const el = document.querySelector(`.guardian`); // 确保选择器正确
     if (el && Math.abs(playerPosition.x - guardian.x) < 20 && Math.abs(playerPosition.y - guardian.y) < 20) {
       if (!gameOver) {
         gameOver = true;
@@ -53,6 +55,14 @@ function render() {
       }
     }
   });
+
+  // 游戏胜利：玩家已经获得钥匙并且到达宝藏位置
+  if (keysCollected === 1 && Math.abs(playerPosition.x - 400) < 20 && Math.abs(playerPosition.y - 400) < 20) {
+    messageDiv.innerHTML = '恭喜你，成功打开宝箱获得宝藏！游戏胜利！';
+    gameOver = true;
+    restartButton.style.display = 'block'; // 显示重新开始按钮
+  }
+}
 
   // 游戏胜利：玩家已经获得钥匙并且到达宝藏位置
   if (keysCollected === 1 && Math.abs(playerPosition.x - 400) < 20 && Math.abs(playerPosition.y - 400) < 20) {
