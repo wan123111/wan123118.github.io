@@ -9,6 +9,7 @@ let playerPosition = { x: 50, y: 50 };
 let ballSpeed = 5;
 let keysCollected = 0;
 let gameOver = false;
+let guardiansLoaded = false;
 
 let locations = [];
 let guardians = [];
@@ -157,8 +158,10 @@ function moveGuardians() {
 function renderGuardians() {
   const guardianElements = document.querySelectorAll('.guardian');
   guardians.forEach((guardian, index) => {
-    guardianElements[index].style.left = `${guardian.x}px`;
-    guardianElements[index].style.top = `${guardian.y}px`;
+    if (guardianElements[index]) { // 确保元素存在
+      guardianElements[index].style.left = `${guardian.x}px`;
+      guardianElements[index].style.top = `${guardian.y}px`;
+    }
   });
 }
 
@@ -218,6 +221,7 @@ function loadMapData() {
         }
       });
 
+      guardiansLoaded = true; // 标记守护者已加载
       initGame(); // 加载完数据后初始化游戏
     })
     .catch(error => {
@@ -234,13 +238,12 @@ playBackgroundMusic(); // 页面加载时播放背景音乐
 
 // 游戏的主循环
 function gameLoop() {
-if (gameStarted && !gameOver) {
-moveGuardians();
-renderGuardians();
-render();
-}
-
-requestAnimationFrame(gameLoop);
+  if (gameStarted && !gameOver && guardiansLoaded) {
+    moveGuardians();
+    renderGuardians();
+    render();
+  }
+  requestAnimationFrame(gameLoop);
 }
 
 // 启动游戏循环
