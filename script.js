@@ -70,7 +70,7 @@ function render() {
     gameOver = true;
     restartButton.style.display = 'block'; // 显示重新开始按钮
   }
-}
+
 
 // 处理玩家与地图物品的互动
 function handleInteraction(location) {
