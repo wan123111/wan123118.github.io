@@ -46,14 +46,16 @@ function render() {
 
   // 检查是否被守护者追上
   guardians.forEach(guardian => {
-    const el = document.querySelector(`.guardian`); // 确保选择器正确
-    if (el && Math.abs(playerPosition.x - guardian.x) < 20 && Math.abs(playerPosition.y - guardian.y) < 20) {
-      if (!gameOver) {
-        gameOver = true;
-        messageDiv.innerHTML = '你被守护者追上了！游戏失败。<br>点击“重新开始”按钮重新开始。';
-        restartButton.style.display = 'block'; // 显示重新开始按钮
+    const guardianElements = document.querySelectorAll('.guardian'); // 获取所有守护者元素
+    guardianElements.forEach(el => {
+      if (el && Math.abs(playerPosition.x - guardian.x) < 20 && Math.abs(playerPosition.y - guardian.y) < 20) {
+        if (!gameOver) {
+          gameOver = true;
+          messageDiv.innerHTML = '你被守护者追上了！游戏失败。<br>点击“重新开始”按钮重新开始。';
+          restartButton.style.display = 'block'; // 显示重新开始按钮
+        }
       }
-    }
+    });
   });
 
   // 游戏胜利：玩家已经获得钥匙并且到达宝藏位置
@@ -63,14 +65,6 @@ function render() {
     restartButton.style.display = 'block'; // 显示重新开始按钮
   }
 }
-
-  // 游戏胜利：玩家已经获得钥匙并且到达宝藏位置
-  if (keysCollected === 1 && Math.abs(playerPosition.x - 400) < 20 && Math.abs(playerPosition.y - 400) < 20) {
-    messageDiv.innerHTML = '恭喜你，成功打开宝箱获得宝藏！游戏胜利！';
-    gameOver = true;
-    restartButton.style.display = 'block'; // 显示重新开始按钮
-  }
-
 
 // 处理玩家与地图物品的互动
 function handleInteraction(location) {
@@ -231,6 +225,7 @@ function loadMapData() {
         }
       });
 
+      guardiansLoaded = true; // 标记守护者已加载
       initGame(); // 加载完数据后初始化游戏
     })
     .catch(error => {
