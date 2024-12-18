@@ -4,25 +4,29 @@ const startButton = document.getElementById('startButton');
 const restartButton = document.getElementById('restartButton');
 const messageDiv = document.getElementById('message');
 
-// 游戏状态变量
 let gameStarted = false;
 let playerPosition = { x: 50, y: 50 };
 let ballSpeed = 5;
 let keysCollected = 0;
 let gameOver = false;
 
-// 地图定义 (L:地图, S:守护者区域, B:宝藏)
-let locations = [
-  { x: 150, y: 100, type: 'L', message: '小心！神庙有守护者！' },
-  { x: 300, y: 300, type: 'S', message: '恭喜你，获得钥匙！' },
-  { x: 400, y: 400, type: 'B', message: '恭喜你，找到宝藏！' },
-];
+let locations = [];
+let guardians = [];
 
-// 随机生成守护者
-let guardians = [
-  { x: 250, y: 250, direction: 'left' },
-  { x: 350, y: 350, direction: 'right' },
-];
+// 存储玩家信息
+function savePlayerInfo(playerId, nickname, gameHistory) {
+  const playerInfo = JSON.stringify({ playerId, nickname, gameHistory });
+  localStorage.setItem('playerInfo', playerInfo);
+}
+
+// 加载玩家信息
+function loadPlayerInfo() {
+  const playerInfo = localStorage.getItem('playerInfo');
+  if (playerInfo) {
+    return JSON.parse(playerInfo);
+  }
+  return null;
+}
 
 // 渲染游戏状态
 function render() {
@@ -31,14 +35,16 @@ function render() {
 
   // 检查玩家是否到达指定地点
   locations.forEach(location => {
-    if (Math.abs(playerPosition.x - location.x) < 20 && Math.abs(playerPosition.y - location.y) < 20) {
+    const el = document.querySelector(`.mapObject.${location.type}`);
+    if (el && Math.abs(playerPosition.x - location.x) < 20 && Math.abs(playerPosition.y - location.y) < 20) {
       handleInteraction(location);
     }
   });
 
   // 检查是否被守护者追上
   guardians.forEach(guardian => {
-    if (Math.abs(playerPosition.x - guardian.x) < 20 && Math.abs(playerPosition.y - guardian.y) < 20) {
+    const el = document.querySelector(`.guardian:nth-child(${guardian.index + 1})`);
+    if (el && Math.abs(playerPosition.x - guardian.x) < 20 && Math.abs(playerPosition.y - guardian.y) < 20) {
       if (!gameOver) {
         gameOver = true;
         messageDiv.innerHTML = '你被守护者追上了！游戏失败。<br>点击“重新开始”按钮重新开始。';
@@ -59,19 +65,11 @@ function render() {
 function handleInteraction(location) {
   switch (location.type) {
     case 'L':
-      if (!map) {
-        map = true;
-        messageDiv.innerHTML = location.message + '<br>';
-        potion = true;
-      }
+      messageDiv.innerHTML = location.message + '<br>';
       break;
     case 'S':
-      if (!potion) {
-        messageDiv.innerHTML = location.message +'<br>';
-      } else {
-        keysCollected++;
-        messageDiv.innerHTML = '你获得了钥匙！可以打开宝箱。';
-      }
+      keysCollected++;
+      messageDiv.innerHTML = '你获得了钥匙！可以打开宝箱。';
       break;
     case 'B':
       if (keysCollected > 0) {
@@ -88,13 +86,8 @@ function initGame() {
   gameStarted = true;
   playerPosition = { x: 50, y: 50 };
   keysCollected = 0;
-  map = false;
-  potion = false;
   gameOver = false;
-  guardians = [
-    { x: 250, y: 250, direction: 'left' },
-    { x: 350, y: 350, direction: 'right' },
-  ];
+  guardians = [];
   messageDiv.innerHTML = '游戏开始，使用方向键或鼠标控制小球。';
   startButton.style.display = 'none';
   restartButton.style.display = 'none'; // 隐藏重新开始按钮
@@ -174,46 +167,81 @@ let backgroundMusic = document.getElementById('backgroundMusic');
 
 // 播放背景音乐
 function playBackgroundMusic() {
-  if (backgroundMusic.paused) {
+  const backgroundMusic = document.getElementById('backgroundMusic');
+  if (backgroundMusic) {
+    // 用户交互后播放音乐
     backgroundMusic.play().catch(error => {
       console.error('Error playing background music:', error);
     });
   }
 }
 
-// 当页面加载时，尝试恢复玩家信息
-document.addEventListener('DOMContentLoaded', () => {
-  // 由于自动播放策略，不在这里播放音乐
-});
-
-// 监听开始游戏按钮点击事件来播放背景音乐
+// 修改开始游戏按钮的事件监听器
 startButton.addEventListener('click', function() {
   initGame();
-  playBackgroundMusic(); // 点击开始游戏时播放背景音乐
+  playBackgroundMusic(); // 用户点击后播放背景音乐
 });
 
-// 监听重新开始按钮点击事件来播放背景音乐
-restartButton.addEventListener('click', function() {
-  restartGame();
-  playBackgroundMusic(); // 点击重新开始游戏时播放背景音乐
+// 异步加载地图数据
+function loadMapData() {
+  fetch('data.txt')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(data => {
+      const lines = data.split('\n');
+      locations = lines.map(line => {
+        const [name, x, y] = line.split(',');
+        const type = name === '图书馆' ? 'L' : name === '神庙' ? 'S' : name === '宝箱' ? 'B' : '';
+        const message = name === '图书馆' ? '小心！神庙有守护者！' : name === '神庙' ? '恭喜你，获得钥匙！' : name === '宝箱' ? '恭喜你，找到宝藏！' : '';
+        const el = document.createElement('div');
+        el.className = `mapObject ${type}`;
+        el.style.left = `${parseInt(x, 10)}px`;
+        el.style.top = `${parseInt(y, 10)}px`;
+        gameContainer.appendChild(el);
+        return { x: parseInt(x, 10), y: parseInt(y, 10), type, message };
+      });
+
+      // 创建守护者
+      lines.forEach((line, index) => {
+        const [name, x, y] = line.split(',');
+        if (name === '守卫') {
+          const guardianEl = document.createElement('div');
+          guardianEl.className = 'guardian';
+          guardianEl.style.left = `${parseInt(x, 10)}px`;
+          guardianEl.style.top = `${parseInt(y, 10)}px`;
+          gameContainer.appendChild(guardianEl);
+          guardians.push({ x: parseInt(x, 10), y: parseInt(y, 10), direction: index % 2 === 0 ? 'left' : 'right' });
+        }
+      });
+
+      initGame(); // 加载完数据后初始化游戏
+    })
+    .catch(error => {
+      console.error('Error loading map data:', error);
+      messageDiv.innerHTML = '无法加载地图数据。';
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+loadMapData(); // 页面加载时加载地图数据
+playBackgroundMusic(); // 页面加载时播放背景音乐
 });
 
 // 游戏的主循环
 function gameLoop() {
-  if (gameStarted && !gameOver) {
-    moveGuardians();
-    renderGuardians();
-    render();
-  }
-
-  requestAnimationFrame(gameLoop);
+if (gameStarted && !gameOver) {
+moveGuardians();
+renderGuardians();
+render();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const backgroundMusic = document.getElementById('backgroundMusic');
-    // 页面加载时自动播放音乐
-    backgroundMusic.play();
-  });
+requestAnimationFrame(gameLoop);
+}
 
 // 启动游戏循环
 gameLoop();
