@@ -231,7 +231,6 @@ function loadMapData() {
         }
       });
 
-      guardiansLoaded = true; // 标记守护者已加载
       initGame(); // 加载完数据后初始化游戏
     })
     .catch(error => {
@@ -240,10 +239,8 @@ function loadMapData() {
     });
 }
 
-
 document.addEventListener('DOMContentLoaded', () => {
-loadMapData(); // 页面加载时加载地图数据
-playBackgroundMusic(); // 页面加载时播放背景音乐
+  loadMapData(); // 页面加载时加载地图数据
 });
 
 // 游戏的主循环
